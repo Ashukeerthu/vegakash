@@ -16,9 +16,9 @@ services:
     image: postgres:15
     container_name: expense_db
     environment:
-      POSTGRES_USER: your_user
-      POSTGRES_PASSWORD: your_password
-      POSTGRES_DB: expense_db
+      POSTGRES_USER: vegakash_user
+      POSTGRES_PASSWORD: vegakash_password
+      POSTGRES_DB: vegakash_db
     ports:
       - "5432:5432"
     volumes:
@@ -28,6 +28,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=http://localhost:8000
     container_name:  vegakash_frontend
     
     ports:

@@ -5,3 +5,4 @@ pydantic
 openai
 python-multipart
 pandas
+psycopg2-binary

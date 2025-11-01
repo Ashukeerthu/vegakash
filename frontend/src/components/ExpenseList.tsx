@@ -165,7 +165,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ refreshTrigger, onExpenseUpda
           <div className="filter-group">
             <select
               value={filters.sort_order || 'desc'}
-              onChange={(e) => setFilters({...filters, sort_order: e.target.value})}
+              onChange={(e) => setFilters({...filters, sort_order: e.target.value as 'asc' | 'desc'})}
               className="filter-select"
             >
               <option value="desc">Newest First</option>

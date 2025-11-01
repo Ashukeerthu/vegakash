@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from datetime import date as date_type
+from datetime import date as date_type, datetime
 from typing import Optional, List
 
 class ExpenseCreate(BaseModel):
@@ -26,8 +26,8 @@ class ExpenseOut(BaseModel):
     amount: float
     date: date_type
     description: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 

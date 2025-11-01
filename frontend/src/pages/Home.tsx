@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getExpenses, addExpense, Expense as ExpenseType } from '../services/expenseService';
+import ExpenseList from '../components/ExpenseList';
 import './Home.css';
 
 const Home: React.FC = () => {
@@ -12,16 +13,15 @@ const Home: React.FC = () => {
     description: ''
   });
   const [isFormVisible, setIsFormVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
 
   const fetchExpenses = async () => {
     try {
       const data = await getExpenses({ limit: 10, sort_by: 'date', sort_order: 'desc' });
       setExpenses(data);
-      setError('');
     } catch (err: any) {
-      setError(err.message || 'Error fetching expenses');
       console.error('Error fetching expenses:', err);
     }
   };
@@ -36,15 +36,45 @@ const Home: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Reset messages
+    setError('');
+    setSuccess('');
+    setIsSubmitting(true);
+    
     try {
-      setLoading(true);
-      await addExpense({
+      console.log('Form submitted with data:', formData);
+      
+      // Validate required fields
+      if (!formData.title || !formData.category || !formData.amount || !formData.date) {
+        throw new Error('Please fill in all required fields');
+      }
+      
+      // Validate amount
+      const amount = parseFloat(formData.amount);
+      if (isNaN(amount) || amount <= 0) {
+        throw new Error('Please enter a valid amount');
+      }
+      
+      console.log('Calling addExpense with:', {
         title: formData.title,
         category: formData.category,
-        amount: parseFloat(formData.amount),
+        amount: amount,
         date: formData.date,
         description: formData.description || undefined
       });
+      
+      const result = await addExpense({
+        title: formData.title,
+        category: formData.category,
+        amount: amount,
+        date: formData.date,
+        description: formData.description || undefined
+      });
+      
+      console.log('Expense added successfully:', result);
+      
+      // Reset form
       setFormData({
         title: '',
         category: '',
@@ -52,14 +82,18 @@ const Home: React.FC = () => {
         date: '',
         description: ''
       });
+      
       setIsFormVisible(false);
-      fetchExpenses();
-      setError('');
+      setSuccess(`Expense "${result.title}" added successfully!`);
+      
+      // Refresh the expenses list
+      await fetchExpenses();
+      
     } catch (err: any) {
-      setError(err.message || 'Error adding expense');
       console.error('Error adding expense:', err);
+      setError(err.message || 'Failed to add expense');
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -111,6 +145,20 @@ const Home: React.FC = () => {
 
         {/* Action Section */}
         <section className="action-section">
+          {error && (
+            <div className="alert alert-error">
+              <span>❌ {error}</span>
+              <button onClick={() => setError('')} className="alert-close">×</button>
+            </div>
+          )}
+          
+          {success && (
+            <div className="alert alert-success">
+              <span>✅ {success}</span>
+              <button onClick={() => setSuccess('')} className="alert-close">×</button>
+            </div>
+          )}
+          
           <button 
             className="add-expense-btn"
             onClick={() => setIsFormVisible(!isFormVisible)}
@@ -213,8 +261,8 @@ const Home: React.FC = () => {
                   <button type="button" className="btn-cancel" onClick={() => setIsFormVisible(false)}>
                     Cancel
                   </button>
-                  <button type="submit" className="btn-submit">
-                    Add Expense
+                  <button type="submit" className="btn-submit" disabled={isSubmitting}>
+                    {isSubmitting ? 'Adding...' : 'Add Expense'}
                   </button>
                 </div>
               </form>
@@ -224,36 +272,7 @@ const Home: React.FC = () => {
 
         {/* Expenses List Section */}
         <section className="expenses-section">
-          <div className="section-header">
-            <h3>📋 Recent Expenses</h3>
-            <span className="expenses-count">{expenses.length} entries</span>
-          </div>
-          
-          {expenses.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📝</div>
-              <h4>No expenses yet</h4>
-              <p>Start tracking your expenses by adding your first entry above!</p>
-            </div>
-          ) : (
-            <div className="expenses-grid">
-              {expenses.map(exp => (
-                <div key={exp.id} className="expense-card">
-                  <div className="expense-header">
-                    <h4 className="expense-title">{exp.title}</h4>
-                    <span className="expense-amount">₹{exp.amount.toLocaleString()}</span>
-                  </div>
-                  <div className="expense-meta">
-                    <span className="expense-category">{exp.category}</span>
-                    <span className="expense-date">{new Date(exp.date).toLocaleDateString()}</span>
-                  </div>
-                  {exp.description && (
-                    <p className="expense-description">{exp.description}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          <ExpenseList onExpenseUpdate={fetchExpenses} />
         </section>
       </main>
 
