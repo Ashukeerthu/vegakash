@@ -20,19 +20,44 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ refreshTrigger, onExpenseUpda
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<ExpenseType>>({});
+  const [error, setError] = useState('');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10); // Items per page
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  
   const [filters, setFilters] = useState<ExpenseFilters>({
     category: '',
     search: '',
     sort_by: 'date',
-    sort_order: 'desc'
+    sort_order: 'desc',
+    limit: 10,
+    skip: 0
   });
-  const [error, setError] = useState('');
 
   const fetchExpenses = async () => {
     try {
       setLoading(true);
-      const data = await getExpenses(filters);
-      setExpenses(data);
+      
+      // First, get total count by fetching all items (for pagination calculation)
+      const allExpenses = await getExpenses({
+        ...filters,
+        limit: undefined,
+        skip: undefined
+      });
+      setTotalItems(allExpenses.length);
+      setTotalPages(Math.ceil(allExpenses.length / itemsPerPage));
+      
+      // Then get the paginated data for current page
+      const paginatedData = await getExpenses({
+        ...filters,
+        limit: itemsPerPage,
+        skip: (currentPage - 1) * itemsPerPage
+      });
+      
+      setExpenses(paginatedData);
       setError('');
     } catch (err: any) {
       setError(err.message || 'Failed to fetch expenses');
@@ -42,9 +67,18 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ refreshTrigger, onExpenseUpda
     }
   };
 
+  // Update filters when page changes
+  useEffect(() => {
+    setFilters(prev => ({
+      ...prev,
+      limit: itemsPerPage,
+      skip: (currentPage - 1) * itemsPerPage
+    }));
+  }, [currentPage, itemsPerPage]);
+
   useEffect(() => {
     fetchExpenses();
-  }, [refreshTrigger, filters]);
+  }, [refreshTrigger, filters, currentPage]);
 
   const handleEdit = (expense: ExpenseType) => {
     setEditingId(expense.id!);
@@ -90,6 +124,40 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ refreshTrigger, onExpenseUpda
     }
   };
 
+  // Pagination handlers
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    handlePageChange(currentPage - 1);
+  };
+
+  const handleNextPage = () => {
+    handlePageChange(currentPage + 1);
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    // Adjust start page if we're near the end
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
+  };
+
   const getCategoryIcon = (category: string) => {
     const icons: { [key: string]: string } = {
       'Food': '🍽️',
@@ -118,7 +186,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ refreshTrigger, onExpenseUpda
   return (
     <div className="expense-list-container">
       <div className="expense-list-header">
-        <h3>💳 Recent Expenses</h3>
+        <h3>💳 Recent Expenses {totalItems > 0 && `(${totalItems} total)`}</h3>
         
         {/* Filters */}
         <div className="expense-filters">
@@ -290,6 +358,55 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ refreshTrigger, onExpenseUpda
               )}
             </div>
           ))}
+        </div>
+      )}
+      
+      {/* Pagination Controls */}
+      {!loading && expenses.length > 0 && totalPages > 1 && (
+        <div className="pagination-container">
+          <div className="pagination-info">
+            <span>
+              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} expenses
+            </span>
+          </div>
+          
+          <div className="pagination-controls">
+            <button 
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              className="pagination-btn pagination-prev"
+              title="Previous page"
+            >
+              ← Previous
+            </button>
+            
+            <div className="pagination-numbers">
+              {getPageNumbers().map(pageNumber => (
+                <button
+                  key={pageNumber}
+                  onClick={() => handlePageChange(pageNumber)}
+                  className={`pagination-btn pagination-number ${
+                    pageNumber === currentPage ? 'active' : ''
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              ))}
+            </div>
+            
+            <button 
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              className="pagination-btn pagination-next"
+              title="Next page"
+            >
+              Next →
+            </button>
+          </div>
+          
+          <div className="pagination-summary">
+            <span>Page {currentPage} of {totalPages}</span>
+          </div>
         </div>
       )}
     </div>

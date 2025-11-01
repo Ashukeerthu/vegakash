@@ -1,27 +1,54 @@
 import React, { useEffect, useState } from 'react';
-import { getInsights, InsightData as InsightDataType } from '../services/expenseService';
+import { 
+  getInsights, 
+  // getCategoryBreakdown, 
+  // getMonthlyTrends,
+  InsightData as InsightDataType 
+} from '../services/expenseService';
+// import CategoryBreakdownChart from '../components/charts/CategoryBreakdownChart';
+// import MonthlyTrendsChart from '../components/charts/MonthlyTrendsChart';
+import SavingsSuggestionsComponent from '../components/SavingsSuggestions';
+import Chatbot from '../components/Chatbot';
+// import '../components/charts/Charts.css';
 import './Insights.css';
 
 const Insights: React.FC = () => {
   const [insights, setInsights] = useState<InsightDataType | null>(null);
+  // const [categoryData, setCategoryData] = useState<any>(null);
+  // const [monthlyData, setMonthlyData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // const [chartType, setChartType] = useState<'line' | 'bar'>('line');
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
 
-  const fetchInsights = async () => {
+  const fetchAllData = async () => {
     try {
       setLoading(true);
-      const data = await getInsights();
-      setInsights(data);
       setError('');
+      
+      // Fetch insights data only for now
+      const insightsData = await getInsights();
+      setInsights(insightsData);
+      
+      // TODO: Enable charts when Chart.js is properly configured
+      // const [insightsData, categoryBreakdown, monthlyTrends] = await Promise.all([
+      //   getInsights(),
+      //   getCategoryBreakdown(),
+      //   getMonthlyTrends()
+      // ]);
+      // setCategoryData(categoryBreakdown);
+      // setMonthlyData(monthlyTrends);
+      
     } catch (err: any) {
-      setError(err.message || 'Failed to fetch insights.');
+      setError(err.message || 'Failed to fetch insights data.');
+      console.error('Error fetching insights data:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchInsights();
+    fetchAllData();
   }, []);
 
   return (
@@ -66,7 +93,7 @@ const Insights: React.FC = () => {
               <div className="error-icon">⚠️</div>
               <h3>Oops! Something went wrong</h3>
               <p>{error}</p>
-              <button className="retry-btn" onClick={fetchInsights}>
+              <button className="retry-btn" onClick={fetchAllData}>
                 Try Again
               </button>
             </div>
@@ -177,6 +204,80 @@ const Insights: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Charts Section */}
+          {!loading && !error && (
+            <section className="charts-section">
+              <div className="section-header">
+                <h2>📊 Visual Analytics</h2>
+                <p>Interactive charts showing your spending patterns and trends</p>
+              </div>
+              
+              <div className="charts-grid">
+                {/* Charts temporarily disabled - will be enabled once Chart.js is properly configured */}
+                <div className="chart-placeholder">
+                  <h3>📊 Data Visualization</h3>
+                  <p>Interactive charts will be available once Chart.js dependencies are resolved.</p>
+                  <ul>
+                    <li>📈 Category Breakdown Chart</li>
+                    <li>📊 Monthly Spending Trends</li>
+                    <li>💰 Savings Analytics</li>
+                  </ul>
+                </div>
+                
+                {/* TODO: Enable when Chart.js is working */}
+                {/* {categoryData && categoryData.categories.length > 0 && (
+                  <CategoryBreakdownChart 
+                    data={categoryData.categories}
+                    totalAmount={categoryData.total_amount}
+                  />
+                )} */}
+                
+                {/* {monthlyData && monthlyData.months.length > 0 && (
+                  <div className="monthly-trends-container">
+                    <div className="chart-controls">
+                      <div className="chart-type-toggle">
+                        <button 
+                          className={`toggle-btn ${chartType === 'line' ? 'active' : ''}`}
+                          onClick={() => setChartType('line')}
+                        >
+                          📈 Line
+                        </button>
+                        <button 
+                          className={`toggle-btn ${chartType === 'bar' ? 'active' : ''}`}
+                          onClick={() => setChartType('bar')}
+                        >
+                          📊 Bar
+                        </button>
+                      </div>
+                    </div>
+                    <MonthlyTrendsChart 
+                      data={monthlyData.months}
+                      chartType={chartType}
+                    />
+                  </div>
+                )} */}
+                
+                {/* No Data State - Temporarily disabled */}
+                {/* {(!categoryData || categoryData.categories.length === 0) && 
+                 (!monthlyData || monthlyData.months.length === 0) && (
+                  <div className="no-charts-data">
+                    <div className="no-data-icon">📊</div>
+                    <h3>No Chart Data Available</h3>
+                    <p>Add some expenses to see visual analytics</p>
+                    <a href="/" className="add-expenses-btn">Add Expenses</a>
+                  </div>
+                )} */}
+              </div>
+            </section>
+          )}
+          
+          {/* Savings Suggestions Section */}
+          {insights && (
+            <section className="savings-section">
+              <SavingsSuggestionsComponent />
+            </section>
+          )}
         </section>
       </main>
 
@@ -208,6 +309,21 @@ const Insights: React.FC = () => {
           <p>&copy; 2025 VegaKash. Empowering smarter financial decisions with AI.</p>
         </div>
       </footer>
+
+      {/* Floating Chatbot Button */}
+      <button 
+        className="chatbot-float-button"
+        onClick={() => setIsChatbotOpen(true)}
+        title="Ask VegaKash AI"
+      >
+        🤖
+      </button>
+
+      {/* Chatbot Component */}
+      <Chatbot 
+        isOpen={isChatbotOpen} 
+        onClose={() => setIsChatbotOpen(false)} 
+      />
     </div>
   );
 };

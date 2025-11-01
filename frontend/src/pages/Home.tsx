@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getExpenses, addExpense, Expense as ExpenseType } from '../services/expenseService';
 import ExpenseList from '../components/ExpenseList';
+import Chatbot from '../components/Chatbot';
 import './Home.css';
 
 const Home: React.FC = () => {
@@ -16,6 +17,13 @@ const Home: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+  const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(false);
+
+  const toggleChatSidebar = () => {
+    setIsChatSidebarOpen(!isChatSidebarOpen);
+  };
 
   const fetchExpenses = async () => {
     try {
@@ -24,6 +32,11 @@ const Home: React.FC = () => {
     } catch (err: any) {
       console.error('Error fetching expenses:', err);
     }
+  };
+
+  const triggerRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+    fetchExpenses();
   };
 
   useEffect(() => {
@@ -88,6 +101,7 @@ const Home: React.FC = () => {
       
       // Refresh the expenses list
       await fetchExpenses();
+      triggerRefresh();
       
     } catch (err: any) {
       console.error('Error adding expense:', err);
@@ -100,7 +114,7 @@ const Home: React.FC = () => {
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
 
   return (
-    <div className="home-wrapper">
+    <div className={`home-wrapper ${isChatSidebarOpen ? 'chat-sidebar-open' : ''}`}>
       {/* Navigation Bar */}
       <nav className="navbar">
         <div className="nav-container">
@@ -113,16 +127,26 @@ const Home: React.FC = () => {
             <a href="/insights" className="nav-link">Insights</a>
             <a href="/reports" className="nav-link">Reports</a>
             <a href="/settings" className="nav-link">Settings</a>
+            {/* AI Assistant Toggle */}
+            <button 
+              className={`nav-ai-toggle ${isChatSidebarOpen ? 'active' : ''}`}
+              onClick={toggleChatSidebar}
+              title="VegaKash AI Assistant"
+            >
+              🤖 AI Assistant
+            </button>
           </div>
         </div>
       </nav>
 
-      {/* Main Content */}
-      <main className="main-content">
-        {/* Hero Section */}
-        <section className="hero-section">
-          <div className="hero-content">
-            <h2>Welcome to Your Financial Dashboard</h2>
+      <div className="app-layout">
+        {/* Main Content Area */}
+        <div className="main-content-area">
+          <main className="main-content">
+            {/* Hero Section */}
+            <section className="hero-section">
+              <div className="hero-content">
+                <h2>Welcome to Your Financial Dashboard</h2>
             <p>Track, manage, and optimize your expenses with ease</p>
             <div className="stats-row">
               <div className="stat-card">
@@ -205,15 +229,14 @@ const Home: React.FC = () => {
                       required
                     >
                       <option value="">Select Category</option>
-                      <option value="Food & Dining">🍽️ Food & Dining</option>
+                      <option value="Food">🍽️ Food</option>
                       <option value="Transportation">🚗 Transportation</option>
                       <option value="Shopping">🛍️ Shopping</option>
                       <option value="Entertainment">🎬 Entertainment</option>
-                      <option value="Bills & Utilities">💡 Bills & Utilities</option>
+                      <option value="Utilities">💡 Utilities</option>
                       <option value="Healthcare">🏥 Healthcare</option>
                       <option value="Education">📚 Education</option>
-                      <option value="Travel">✈️ Travel</option>
-                      <option value="Others">📌 Others</option>
+                      <option value="Other">📌 Other</option>
                     </select>
                   </div>
                   
@@ -272,38 +295,74 @@ const Home: React.FC = () => {
 
         {/* Expenses List Section */}
         <section className="expenses-section">
-          <ExpenseList onExpenseUpdate={fetchExpenses} />
+          <ExpenseList 
+            refreshTrigger={refreshTrigger} 
+            onExpenseUpdate={triggerRefresh} 
+          />
         </section>
-      </main>
+          </main>
 
-      {/* Footer */}
-      <footer className="footer">
-        <div className="footer-content">
-          <div className="footer-section">
-            <h4>VegaKash</h4>
-            <p>Your trusted personal finance companion</p>
+          {/* Footer */}
+          <footer className="footer">
+            <div className="footer-content">
+              <div className="footer-section">
+                <h4>VegaKash</h4>
+                <p>Your trusted personal finance companion</p>
+              </div>
+              <div className="footer-section">
+                <h5>Quick Links</h5>
+                <ul>
+                  <li><a href="/">Dashboard</a></li>
+                  <li><a href="/insights">Insights</a></li>
+                  <li><a href="/reports">Reports</a></li>
+                </ul>
+              </div>
+              <div className="footer-section">
+                <h5>Support</h5>
+                <ul>
+                  <li><a href="/help">Help Center</a></li>
+                  <li><a href="/contact">Contact Us</a></li>
+                  <li><a href="/privacy">Privacy Policy</a></li>
+                </ul>
+              </div>
+            </div>
+            <div className="footer-bottom">
+              <p>&copy; 2025 VegaKash. Made with ❤️ for better financial management.</p>
+            </div>
+          </footer>
+        </div>
+
+        {/* AI Chat Sidebar */}
+        <div className={`chat-sidebar ${isChatSidebarOpen ? 'open' : ''}`}>
+          <div className="chat-sidebar-header">
+            <div className="chat-sidebar-title">
+              <span className="ai-icon">🤖</span>
+              <h3>VegaKash AI Assistant</h3>
+            </div>
+            <button 
+              className="chat-sidebar-close"
+              onClick={toggleChatSidebar}
+              title="Close AI Assistant"
+            >
+              ×
+            </button>
           </div>
-          <div className="footer-section">
-            <h5>Quick Links</h5>
-            <ul>
-              <li><a href="/">Dashboard</a></li>
-              <li><a href="/insights">Insights</a></li>
-              <li><a href="/reports">Reports</a></li>
-            </ul>
-          </div>
-          <div className="footer-section">
-            <h5>Support</h5>
-            <ul>
-              <li><a href="/help">Help Center</a></li>
-              <li><a href="/contact">Contact Us</a></li>
-              <li><a href="/privacy">Privacy Policy</a></li>
-            </ul>
+          <div className="chat-sidebar-content">
+            <Chatbot 
+              isOpen={isChatSidebarOpen} 
+              onClose={toggleChatSidebar}
+            />
           </div>
         </div>
-        <div className="footer-bottom">
-          <p>&copy; 2025 VegaKash. Made with ❤️ for better financial management.</p>
-        </div>
-      </footer>
+
+        {/* Sidebar Backdrop */}
+        {isChatSidebarOpen && (
+          <div 
+            className="chat-sidebar-backdrop"
+            onClick={toggleChatSidebar}
+          />
+        )}
+      </div>
     </div>
   );
 };

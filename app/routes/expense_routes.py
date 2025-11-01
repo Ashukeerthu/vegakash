@@ -171,3 +171,104 @@ def get_categories(db: Session = Depends(get_db)):
         return [cat[0] for cat in categories if cat[0]]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching categories: {str(e)}")
+
+@router.get("/expenses/analytics/category-breakdown")
+def get_category_breakdown(db: Session = Depends(get_db)):
+    """Get expense breakdown by category for charts."""
+    try:
+        expenses = db.query(Expense).all()
+        
+        if not expenses:
+            return {
+                "categories": [],
+                "total_amount": 0
+            }
+        
+        # Calculate category breakdown
+        category_totals = {}
+        total_amount = 0
+        
+        for expense in expenses:
+            category = expense.category
+            amount = expense.amount
+            total_amount += amount
+            
+            if category in category_totals:
+                category_totals[category]["amount"] += amount
+                category_totals[category]["count"] += 1
+            else:
+                category_totals[category] = {
+                    "amount": amount,
+                    "count": 1
+                }
+        
+        # Convert to list format for charts
+        categories = []
+        for category, data in category_totals.items():
+            percentage = (data["amount"] / total_amount * 100) if total_amount > 0 else 0
+            categories.append({
+                "category": category,
+                "amount": data["amount"],
+                "count": data["count"],
+                "percentage": round(percentage, 2)
+            })
+        
+        # Sort by amount descending
+        categories.sort(key=lambda x: x["amount"], reverse=True)
+        
+        return {
+            "categories": categories,
+            "total_amount": total_amount
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting category breakdown: {str(e)}")
+
+@router.get("/expenses/analytics/monthly-trends")
+def get_monthly_trends(db: Session = Depends(get_db)):
+    """Get monthly spending trends for charts."""
+    try:
+        expenses = db.query(Expense).all()
+        
+        if not expenses:
+            return {
+                "months": [],
+                "total_months": 0
+            }
+        
+        # Group expenses by month
+        monthly_data = {}
+        
+        for expense in expenses:
+            # Format month as YYYY-MM
+            month_key = expense.date.strftime("%Y-%m")
+            month_display = expense.date.strftime("%b %Y")
+            
+            if month_key not in monthly_data:
+                monthly_data[month_key] = {
+                    "month": month_display,
+                    "amount": 0,
+                    "count": 0
+                }
+            
+            monthly_data[month_key]["amount"] += expense.amount
+            monthly_data[month_key]["count"] += 1
+        
+        # Convert to sorted list
+        months = []
+        for month_key in sorted(monthly_data.keys()):
+            data = monthly_data[month_key]
+            months.append({
+                "month": data["month"],
+                "amount": data["amount"],
+                "count": data["count"],
+                "average": data["amount"] / data["count"] if data["count"] > 0 else 0
+            })
+        
+        return {
+            "months": months,
+            "total_months": len(months)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting monthly trends: {str(e)}")

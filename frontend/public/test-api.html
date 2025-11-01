@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VegaKash API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffe6e6; color: red; }
+        .success { background: #e6ffe6; color: green; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>VegaKash API Connection Test</h1>
+    
+    <button onclick="testHealth()">Test Health Endpoint</button>
+    <button onclick="testChat()">Test Chat Endpoint</button>
+    <button onclick="testExpenses()">Test Expenses Endpoint</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'http://backend:8000';
+        
+        function log(message, isError = false) {
+            const div = document.createElement('div');
+            div.className = `result ${isError ? 'error' : 'success'}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            document.getElementById('results').appendChild(div);
+            console.log(message);
+        }
+        
+        async function testHealth() {
+            try {
+                log(`Testing health endpoint: ${API_BASE}/health`);
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                log(`✅ Health check success: ${JSON.stringify(data)}`);
+            } catch (error) {
+                log(`❌ Health check failed: ${error.message}`, true);
+            }
+        }
+        
+        async function testChat() {
+            try {
+                log(`Testing chat endpoint: ${API_BASE}/ai/chat`);
+                const response = await fetch(`${API_BASE}/ai/chat?message=How much have I spent?`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                log(`✅ Chat success: ${data.response.substring(0, 100)}...`);
+            } catch (error) {
+                log(`❌ Chat failed: ${error.message}`, true);
+            }
+        }
+        
+        async function testExpenses() {
+            try {
+                log(`Testing expenses endpoint: ${API_BASE}/expenses`);
+                const response = await fetch(`${API_BASE}/expenses`);
+                const data = await response.json();
+                log(`✅ Expenses success: Found ${data.length} expenses`);
+            } catch (error) {
+                log(`❌ Expenses failed: ${error.message}`, true);
+            }
+        }
+        
+        // Auto-test on load
+        window.onload = function() {
+            log(`🔍 Starting API tests with base URL: ${API_BASE}`);
+            setTimeout(testHealth, 1000);
+            setTimeout(testExpenses, 2000);
+            setTimeout(testChat, 3000);
+        };
+    </script>
+</body>
+</html>

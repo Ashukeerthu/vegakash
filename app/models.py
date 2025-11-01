@@ -45,7 +45,19 @@ class Expense(Base):
 
     @validates('category')
     def validate_category(self, key, category):
-        """Validate category field"""
+        """Validate category field with mapping for old category names"""
+        # Map old category names to new ones
+        category_mapping = {
+            'Food & Dining': 'Food',
+            'Bills & Utilities': 'Utilities',
+            'Others': 'Other',
+            'Travel': 'Other'  # Map Travel to Other since it's not in our list
+        }
+        
+        # Apply mapping if category exists in mapping
+        if category in category_mapping:
+            category = category_mapping[category]
+        
         allowed_categories = [
             'Food', 'Transportation', 'Entertainment', 'Shopping', 
             'Healthcare', 'Education', 'Utilities', 'Other'

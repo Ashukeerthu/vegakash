@@ -409,3 +409,298 @@ if (typeof window !== 'undefined') {
   // Only run in browser environment
   setTimeout(initializeSampleData, 100);
 }
+
+// Analytics API functions
+export const getCategoryBreakdown = async (): Promise<{categories: any[], total_amount: number}> => {
+  console.log('getCategoryBreakdown called');
+  
+  await ensureBackendCheck();
+  
+  if (!backendAvailable) {
+    console.log('Using localStorage for category breakdown');
+    const expenses = getExpensesFromStorage();
+    
+    if (expenses.length === 0) {
+      return { categories: [], total_amount: 0 };
+    }
+    
+    const categoryTotals: { [key: string]: { amount: number; count: number } } = {};
+    let totalAmount = 0;
+    
+    expenses.forEach(expense => {
+      totalAmount += expense.amount;
+      if (categoryTotals[expense.category]) {
+        categoryTotals[expense.category].amount += expense.amount;
+        categoryTotals[expense.category].count += 1;
+      } else {
+        categoryTotals[expense.category] = {
+          amount: expense.amount,
+          count: 1
+        };
+      }
+    });
+    
+    const categories = Object.entries(categoryTotals).map(([category, data]) => ({
+      category,
+      amount: data.amount,
+      count: data.count,
+      percentage: totalAmount > 0 ? (data.amount / totalAmount * 100) : 0
+    })).sort((a, b) => b.amount - a.amount);
+    
+    return { categories, total_amount: totalAmount };
+  }
+
+  try {
+    console.log('Making GET request to /expenses/analytics/category-breakdown');
+    const response = await apiClient.get('/expenses/analytics/category-breakdown');
+    console.log('Category breakdown response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('API error, falling back to localStorage:', error);
+    backendAvailable = false;
+    return getCategoryBreakdown();
+  }
+};
+
+export const getMonthlyTrends = async (): Promise<{months: any[], total_months: number}> => {
+  console.log('getMonthlyTrends called');
+  
+  await ensureBackendCheck();
+  
+  if (!backendAvailable) {
+    console.log('Using localStorage for monthly trends');
+    const expenses = getExpensesFromStorage();
+    
+    if (expenses.length === 0) {
+      return { months: [], total_months: 0 };
+    }
+    
+    const monthlyData: { [key: string]: { amount: number; count: number; month: string } } = {};
+    
+    expenses.forEach(expense => {
+      const date = new Date(expense.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const monthDisplay = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+      
+      if (monthlyData[monthKey]) {
+        monthlyData[monthKey].amount += expense.amount;
+        monthlyData[monthKey].count += 1;
+      } else {
+        monthlyData[monthKey] = {
+          amount: expense.amount,
+          count: 1,
+          month: monthDisplay
+        };
+      }
+    });
+    
+    const months = Object.keys(monthlyData)
+      .sort()
+      .map(key => ({
+        month: monthlyData[key].month,
+        amount: monthlyData[key].amount,
+        count: monthlyData[key].count,
+        average: monthlyData[key].amount / monthlyData[key].count
+      }));
+    
+    return { months, total_months: months.length };
+  }
+
+  try {
+    console.log('Making GET request to /expenses/analytics/monthly-trends');
+    const response = await apiClient.get('/expenses/analytics/monthly-trends');
+    console.log('Monthly trends response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('API error, falling back to localStorage:', error);
+    backendAvailable = false;
+    return getMonthlyTrends();
+  }
+};
+
+export interface SavingsSuggestions {
+  suggestions: string[];
+  potential_savings: number;
+  priority_areas: string[];
+}
+
+export const getSavingsSuggestions = async (): Promise<SavingsSuggestions> => {
+  if (!backendAvailable) {
+    // Fallback for when backend is not available
+    const expenses = getExpensesFromStorage();
+    const totalSpent = expenses.reduce((sum: number, expense: Expense) => sum + expense.amount, 0);
+    const categories = expenses.reduce((acc: Record<string, number>, expense: Expense) => {
+      acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const suggestions = [
+      'Track your expenses consistently for better insights',
+      'Consider setting category-wise budgets',
+      'Review your highest expense categories for potential savings'
+    ];
+    
+    // Add category-specific suggestions
+    const sortedCategories = Object.entries(categories)
+      .sort(([,a], [,b]) => (b as number) - (a as number))
+      .slice(0, 2);
+    
+    for (const [category, amount] of sortedCategories) {
+      suggestions.push(`Look for alternatives in ${category} to reduce ₹${(amount as number).toFixed(2)} spending`);
+    }
+    
+    return {
+      suggestions: suggestions.slice(0, 5),
+      potential_savings: totalSpent * 0.1, // Estimate 10% savings
+      priority_areas: sortedCategories.map(([category]) => category)
+    };
+  }
+
+  try {
+    console.log('Making POST request to /ai/savings-suggestions');
+    const response = await apiClient.post('/ai/savings-suggestions');
+    console.log('Savings suggestions response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('API error, falling back to localStorage:', error);
+    backendAvailable = false;
+    return getSavingsSuggestions();
+  }
+};
+
+// Chat service interface
+export interface ChatResponse {
+  response: string;
+  timestamp: string;
+  context_available: boolean;
+  specialist_mode?: string;
+  response_type?: string;
+}
+
+export const sendChatMessage = async (message: string): Promise<ChatResponse> => {
+  console.log('🤖 sendChatMessage called with:', message);
+  console.log('🌐 API_BASE_URL:', API_BASE_URL);
+  
+  // Force backend health check for chat
+  try {
+    console.log('🔍 Checking backend health for chat...');
+    const healthResponse = await apiClient.get('/health');
+    console.log('✅ Backend health check passed:', healthResponse.status);
+    backendAvailable = true;
+  } catch (error) {
+    console.error('❌ Backend health check failed:', error);
+    backendAvailable = false;
+  }
+  
+  if (!backendAvailable) {
+    console.log('📱 Using fallback chat responses due to backend unavailability');
+    return getFallbackChatResponse(message);
+  }
+
+  try {
+    console.log('🚀 Making POST request to /ai/chat with message:', message);
+    
+    // Use query parameters as expected by FastAPI
+    const response = await apiClient.post('/ai/chat', null, {
+      params: { message },
+      timeout: 15000 // Increased timeout for AI responses
+    });
+    
+    console.log('✅ Chat API response received:', response.data);
+    
+    // Validate response structure
+    if (!response.data || typeof response.data.response !== 'string') {
+      console.error('❌ Invalid response structure from backend:', response.data);
+      throw new Error('Invalid response format from server');
+    }
+    
+    return {
+      response: response.data.response,
+      timestamp: response.data.timestamp || new Date().toISOString(),
+      context_available: response.data.context_available || false,
+      specialist_mode: response.data.specialist_mode || 'ai_powered',
+      response_type: response.data.response_type || 'financial_advice'
+    };
+    
+  } catch (error: any) {
+    console.error('❌ Chat API error:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      url: error.config?.url,
+    });
+    
+    // Don't set backendAvailable to false for temporary errors
+    if (error.response?.status >= 500 || error.code === 'ECONNREFUSED') {
+      console.log('🔄 Temporary backend issue, using fallback');
+      return getFallbackChatResponse(message);
+    }
+    
+    // For other errors, still try to provide a response
+    return {
+      response: `I encountered an error: ${error.response?.data?.detail || error.message}. Please try again or contact support.`,
+      timestamp: new Date().toISOString(),
+      context_available: false,
+      specialist_mode: 'error_fallback',
+      response_type: 'error_message'
+    };
+  }
+};
+
+// Enhanced fallback responses
+const getFallbackChatResponse = (message: string): ChatResponse => {
+  const messageLower = message.toLowerCase();
+  
+  // Investment queries
+  if (messageLower.includes('invest') || messageLower.includes('sip') || messageLower.includes('mutual fund')) {
+    return {
+      response: `💼 INVESTMENT GUIDANCE:\n\n🎯 For beginners:\n• Start with SIP ₹3,000-5,000/month\n• Choose diversified equity funds\n• ELSS for tax saving\n\n📈 Expected returns: 12-15% annually\n\n📞 For detailed investment planning, call: 1800-VEGAKASH`,
+      timestamp: new Date().toISOString(),
+      context_available: false,
+      specialist_mode: 'fallback',
+      response_type: 'investment_advice'
+    };
+  }
+  
+  // Spending/expense queries
+  if (messageLower.includes('spend') || messageLower.includes('expense') || messageLower.includes('month')) {
+    return {
+      response: `💰 EXPENSE INSIGHTS:\n\n📊 Add some expenses first to get:\n• Monthly spending analysis\n• Category breakdowns\n• Personalized savings tips\n\n🎯 Quick tip: Track daily for better insights!\n\n📞 For budget planning, call: 1800-VEGAKASH`,
+      timestamp: new Date().toISOString(),
+      context_available: false,
+      specialist_mode: 'fallback',
+      response_type: 'expense_advice'
+    };
+  }
+  
+  // Savings queries
+  if (messageLower.includes('save') || messageLower.includes('savings')) {
+    return {
+      response: `💡 SAVINGS STRATEGIES:\n\n🎯 Quick wins:\n• Follow 50/30/20 rule\n• Automate savings first\n• Track daily expenses\n• Compare before buying\n\n🏆 Build emergency fund: 6 months expenses\n\n📞 For personalized strategy, call: 1800-VEGAKASH`,
+      timestamp: new Date().toISOString(),
+      context_available: false,
+      specialist_mode: 'fallback',
+      response_type: 'savings_advice'
+    };
+  }
+  
+  // Budget queries
+  if (messageLower.includes('budget')) {
+    return {
+      response: `📊 BUDGET PLANNING:\n\n🎯 50/30/20 RULE:\n• 50% - Needs (rent, groceries)\n• 30% - Wants (entertainment)\n• 20% - Savings & investments\n\n💡 Start by tracking expenses for 3 months\n\n📞 For detailed budgeting, call: 1800-VEGAKASH`,
+      timestamp: new Date().toISOString(),
+      context_available: false,
+      specialist_mode: 'fallback',
+      response_type: 'budget_advice'
+    };
+  }
+  
+  // Default response
+  return {
+    response: `🤖 Hi! I'm VegaKash AI Financial Assistant!\n\n💡 I can help with:\n• 💰 Expense analysis & budgeting\n• 📈 Investment planning\n• 💳 Credit management\n• 🎯 Savings strategies\n\n❓ Ask me anything about finances!\n\n📞 For expert consultation, call: 1800-VEGAKASH`,
+    timestamp: new Date().toISOString(),
+    context_available: false,
+    specialist_mode: 'fallback',
+    response_type: 'general_help'
+  };
+};
