@@ -1,0 +1,404 @@
+/* ===== ExpenseList Component Styles ===== */
+.expense-list-container {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f0f0f0;
+}
+
+.expense-list-header {
+  margin-bottom: 24px;
+}
+
+.expense-list-header h3 {
+  color: #2d3748;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+/* ===== Filters ===== */
+.expense-filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.filter-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-input,
+.filter-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.search-input:focus,
+.filter-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-input::placeholder {
+  color: #a0aec0;
+}
+
+/* ===== Loading and Error States ===== */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #718096;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fed7d7;
+  color: #c53030;
+  border: 1px solid #feb2b2;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.error-icon {
+  font-size: 16px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #718096;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-state h4 {
+  color: #2d3748;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  color: #718096;
+  font-size: 14px;
+}
+
+/* ===== Expense List ===== */
+.expense-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.expense-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.expense-item:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.expense-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.expense-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.expense-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.category-icon {
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.expense-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.expense-title {
+  color: #2d3748;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.expense-category {
+  color: #718096;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.expense-amount {
+  color: #e53e3e;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.expense-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.expense-date {
+  color: #718096;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.expense-description {
+  color: #4a5568;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  margin: 0;
+  font-style: italic;
+}
+
+/* ===== Expense Actions ===== */
+.expense-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: 16px;
+}
+
+.edit-btn,
+.delete-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.edit-btn {
+  background: #ebf8ff;
+  color: #3182ce;
+}
+
+.edit-btn:hover {
+  background: #bee3f8;
+  transform: scale(1.05);
+}
+
+.delete-btn {
+  background: #fed7d7;
+  color: #e53e3e;
+}
+
+.delete-btn:hover {
+  background: #feb2b2;
+  transform: scale(1.05);
+}
+
+/* ===== Edit Form ===== */
+.expense-edit-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px;
+}
+
+.edit-row {
+  display: flex;
+  gap: 12px;
+}
+
+.edit-input,
+.edit-select,
+.edit-textarea {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.edit-input:focus,
+.edit-select:focus,
+.edit-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.edit-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.save-btn,
+.cancel-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.save-btn {
+  background: #667eea;
+  color: white;
+}
+
+.save-btn:hover {
+  background: #5a6fd8;
+  transform: translateY(-1px);
+}
+
+.cancel-btn {
+  background: #e2e8f0;
+  color: #4a5568;
+}
+
+.cancel-btn:hover {
+  background: #cbd5e0;
+  transform: translateY(-1px);
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 768px) {
+  .expense-filters {
+    flex-direction: column;
+  }
+  
+  .filter-group {
+    min-width: auto;
+  }
+  
+  .expense-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .expense-amount {
+    font-size: 1.1rem;
+  }
+  
+  .expense-actions {
+    margin-left: 0;
+    margin-top: 12px;
+  }
+  
+  .edit-row {
+    flex-direction: column;
+  }
+  
+  .edit-actions {
+    justify-content: stretch;
+  }
+  
+  .save-btn,
+  .cancel-btn {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .expense-list-container {
+    padding: 16px;
+  }
+  
+  .expense-item {
+    padding: 16px;
+  }
+  
+  .expense-title-section {
+    gap: 8px;
+  }
+  
+  .category-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+  
+  .expense-title {
+    font-size: 1rem;
+  }
+}
