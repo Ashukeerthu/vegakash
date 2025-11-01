@@ -1,0 +1,6 @@
+# Azure-specific requirements
+# These packages may be needed for Azure App Service deployment
+gunicorn==21.2.0
+psycopg2-binary==2.9.7
+azure-storage-blob==12.19.0
+redis==4.6.0

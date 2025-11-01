@@ -1,0 +1,48 @@
+name: Deploy VegaKash Backend to Azure App Service
+
+on:
+  push:
+    branches: [ main, feature/azure-backend-deploy ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-azure.txt
+    
+    - name: Run tests (if any)
+      run: |
+        # Add your test commands here
+        # python -m pytest
+        echo "No tests configured yet"
+    
+    - name: Deploy to Azure App Service
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'vegakash-backend'  # Replace with your Azure App Service name
+        slot-name: 'production'
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        package: .
+    
+    # Optional: Deploy to staging slot first
+    # - name: Deploy to Staging Slot
+    #   uses: azure/webapps-deploy@v2
+    #   with:
+    #     app-name: 'vegakash-backend'
+    #     slot-name: 'staging'
+    #     publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_STAGING }}
+    #     package: .

@@ -7,11 +7,16 @@ from app.routes.expense_routes import router as expense_router
 from app.routes.ai_routes import router as ai_router
 from app.utils.database import engine, Base
 from app.schemas import ErrorResponse
+from app.config import settings
 import logging
 from pydantic import ValidationError
+import os
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=getattr(logging, settings.LOG_LEVEL),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 # Create database tables
@@ -23,17 +28,17 @@ except Exception as e:
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="VegaKash API",
-    description="Personal Finance Management API with AI Insights",
-    version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc"
+    title=settings.API_TITLE,
+    description=settings.API_DESCRIPTION,
+    version=settings.API_VERSION,
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None
 )
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

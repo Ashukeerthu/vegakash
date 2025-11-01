@@ -2,18 +2,26 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from app.config import settings
 
-# Get database URL from environment or use default SQLite
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./vegakash.db")
+# Get database URL from settings
+DATABASE_URL = settings.DATABASE_URL
 
-# Create SQLAlchemy engine
+# Create SQLAlchemy engine with Azure-optimized configuration
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
         DATABASE_URL, 
         connect_args={"check_same_thread": False}
     )
 else:
-    engine = create_engine(DATABASE_URL)
+    # For PostgreSQL or other databases (Azure)
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,  # Verify connections before using
+        pool_recycle=300,    # Recycle connections every 5 minutes
+        pool_size=10,        # Number of connections to maintain
+        max_overflow=20      # Additional connections when needed
+    )
 
 # Create SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
